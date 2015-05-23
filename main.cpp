@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include "Buffer.h"
+#include "FrameBuffer.h"
 #include "SDLManager.h"
 #include <ctime>
 
@@ -26,7 +26,7 @@ int main() {
     char textBuffer[80];
 
     if (fd >= 0) {
-        Buffer *buffer = new Buffer;
+        FrameBuffer *buffer = new FrameBuffer;
         buffer->init(fd);
         SDLManager *sdlManager = new SDLManager(buffer);
         sdlManager->init();

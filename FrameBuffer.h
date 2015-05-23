@@ -1,9 +1,5 @@
-//
-// Created by dejan on 20.5.2015.
-//
-
-#ifndef CCLOCK_BUFFER_H
-#define CCLOCK_BUFFER_H
+#ifndef CCLOCK_FRAMEBUFFER_H
+#define CCLOCK_FRAMEBUFFER_H
 
 
 #include <stddef.h>
@@ -13,7 +9,7 @@
 #include <string.h>
 #include <SDL2/SDL_pixels.h>
 
-class Buffer {
+class FrameBuffer {
 protected:
     char *buffer = NULL;
     struct fb_var_screeninfo screen_info;
@@ -28,7 +24,8 @@ public:
     int width;
     int height;
     int bitsPerPixel;
-    Buffer() {
+
+    FrameBuffer() {
 
 
     };
@@ -38,7 +35,9 @@ public:
         if (frameBufferHandle >= 0) {
             if (!ioctl(frameBufferHandle, FBIOGET_VSCREENINFO, &screen_info) &&
                 !ioctl(frameBufferHandle, FBIOGET_FSCREENINFO, &fixed_info)) {
-                fprintf(stderr, "%d %d\n", screen_info.bits_per_pixel, screen_info.width);
+                width = screen_info.width;
+                height = screen_info.height;
+
                 bufferLength = screen_info.yres_virtual * fixed_info.line_length;
                 buffer = (char *) mmap(NULL,
                                        bufferLength,
@@ -46,8 +45,7 @@ public:
                                        MAP_SHARED,
                                        frameBufferHandle,
                                        0);
-                width = screen_info.width;
-                height = screen_info.height;
+
                 bitsPerPixel = screen_info.bits_per_pixel;
 
                 return buffer != MAP_FAILED;
@@ -56,24 +54,21 @@ public:
         return false;
     }
 
-    void drawPixel(int x, int y, SDL_Color color) {
-        if (   x > screen_info.width
-            || x < 0
-            || y > screen_info.height
-            || y < 0
-        ) {
-
+    void updatePixel(int x, int y, SDL_Color color) {
+        if (x > width || x < 0
+            || y > height || y < 0) {
             return;
         };
 
-        long int location = x * screen_info.bits_per_pixel / 8 + y * fixed_info.line_length;
+        long int location = x * bitsPerPixel / 8 + y * fixed_info.line_length;
         *((unsigned short int *) (buffer + location)) = rgbToPixelValue(color);
     }
+
     void clear() {
         memset(&buffer[0], 0, bufferLength);
     }
 
-    ~Buffer() {
+    ~FrameBuffer() {
         if (buffer && buffer != MAP_FAILED) {
             munmap(buffer, bufferLength);
         }

@@ -3,7 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include "Buffer.h"
+#include "FrameBuffer.h"
 #include "SDLFontManager.h"
 
 class SDLManager {
@@ -11,7 +11,7 @@ protected:
     SDL_Surface *mainSurface = nullptr;
     SDL_Renderer *renderer = nullptr;
     SDL_Font *fonts = nullptr;
-    Buffer *buffer = nullptr;
+    FrameBuffer *frameBuffer = nullptr;
 
     Uint32 getpixel(SDL_Surface *surface, int x, int y) {
         int bpp = surface->format->BytesPerPixel;
@@ -36,8 +36,8 @@ protected:
     }
 
 public:
-    SDLManager(Buffer *_buffer) {
-        buffer = _buffer;
+    SDLManager(FrameBuffer *_buffer) {
+        frameBuffer = _buffer;
     };
 
     ~SDLManager() {
@@ -57,7 +57,7 @@ public:
 
     bool init() {
         //init main surface
-        mainSurface = SDL_CreateRGBSurface(0, buffer->width, buffer->width, buffer->bitsPerPixel, 0, 0, 0, 255);
+        mainSurface = SDL_CreateRGBSurface(0, frameBuffer->width, frameBuffer->width, frameBuffer->bitsPerPixel, 0, 0, 0, 255);
         if (mainSurface == nullptr) {
             fprintf(stderr, "MAin surface creation failed %s", SDL_GetError());
             return false;
@@ -108,14 +108,14 @@ public:
     }
 
     void updateFrameBuffer() {
-        buffer->clear();
+        frameBuffer->clear();
         SDL_RenderPresent(renderer);
         for (int x = 0; x < mainSurface->w; x++) {
             for (int y = 0; y < mainSurface->h; y++) {
                 Uint32 pixel = getpixel(mainSurface, x, y);
                 SDL_Color color;
                 SDL_GetRGB(pixel, mainSurface->format, &color.r, &color.g, &color.b);
-                buffer->drawPixel(x, y, color);
+                frameBuffer->updatePixel(x, y, color);
             }
         }
         SDL_RenderClear(renderer);

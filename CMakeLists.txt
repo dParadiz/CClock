@@ -9,6 +9,6 @@ set(SOURCE_FILES main.cpp)
 
 
 
-add_executable(CClock ${SOURCE_FILES} Buffer.h Structures.h SDLManager.h SDLFontManager.h)
+add_executable(CClock ${SOURCE_FILES} FrameBuffer.h Structures.h SDLManager.h SDLFontManager.h)
 
 TARGET_LINK_LIBRARIES(CClock SDL2 SDL2_ttf)
