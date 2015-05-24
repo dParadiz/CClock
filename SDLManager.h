@@ -11,12 +11,13 @@ protected:
     SDL_Surface *mainSurface = nullptr;
     SDL_Renderer *renderer = nullptr;
     SDL_Font *fonts = nullptr;
-    FrameBuffer *frameBuffer = nullptr;
 
     Uint32 getpixel(SDL_Surface *surface, int x, int y) {
         int bpp = surface->format->BytesPerPixel;
+        int pixelsPerLine = surface->pitch;
         /* Here p is the address to the pixel we want to retrieve */
-        Uint8 *p = (Uint8 *) surface->pixels + y * surface->pitch + x * bpp;
+        Uint8 *p = (Uint8 *) surface->pixels + y * pixelsPerLine + x * bpp;
+
 
         switch (bpp) {
             case 1:
@@ -36,9 +37,7 @@ protected:
     }
 
 public:
-    SDLManager(FrameBuffer *_buffer) {
-        frameBuffer = _buffer;
-    };
+    SDLManager() { };
 
     ~SDLManager() {
         if (nullptr != mainSurface) {
@@ -51,13 +50,11 @@ public:
         if (nullptr != fonts) {
             delete fonts;
         }
-
-
     }
 
-    bool init() {
+    bool init(int width, int height, int bitsPerPixel) {
         //init main surface
-        mainSurface = SDL_CreateRGBSurface(0, frameBuffer->width, frameBuffer->width, frameBuffer->bitsPerPixel, 0, 0, 0, 255);
+        mainSurface = SDL_CreateRGBSurface(0, width, width, bitsPerPixel, 0, 0, 0, 255);
         if (mainSurface == nullptr) {
             fprintf(stderr, "MAin surface creation failed %s", SDL_GetError());
             return false;
@@ -75,7 +72,7 @@ public:
     }
 
     bool renderText(const char *text, SDL_Color color, int size, int x = 0, int y = 0) {
-        TTF_Font* font = fonts->getFont(size);
+        TTF_Font *font = fonts->getFont(size);
         SDL_Surface *fontSurface = TTF_RenderText_Solid(font, text, color);
 
         if (fontSurface == nullptr) {
@@ -91,7 +88,7 @@ public:
         SrcR.x = 0;
         SrcR.y = 0;
 
-        DestR.x = mainSurface->w / 2 - fontSurface->w/2 ;
+        DestR.x = mainSurface->w / 2 - fontSurface->w / 2;
         DestR.y = y;
         DestR.w = fontSurface->w;
         DestR.h = fontSurface->h;
@@ -104,12 +101,14 @@ public:
         SDL_FreeSurface(fontSurface);
 
         SDL_RenderCopy(renderer, texture, &SrcR, &DestR);
+        SDL_DestroyTexture(texture);
         return true;
     }
 
-    void updateFrameBuffer() {
+    void updateFrameBuffer(FrameBuffer *frameBuffer) {
         frameBuffer->clear();
         SDL_RenderPresent(renderer);
+        //frameBuffer and Sdl_Surface are both one dimension, no need for double loop
         for (int x = 0; x < mainSurface->w; x++) {
             for (int y = 0; y < mainSurface->h; y++) {
                 Uint32 pixel = getpixel(mainSurface, x, y);
@@ -118,6 +117,7 @@ public:
                 frameBuffer->updatePixel(x, y, color);
             }
         }
+
         SDL_RenderClear(renderer);
     }
 

@@ -44,6 +44,7 @@ public:
         for (std::map<int, TTF_Font *>::iterator it = FontSizes.begin(); it != FontSizes.end(); ++it) {
             TTF_CloseFont(it->second);
         }
+        TTF_Quit();
     }
 };
 
