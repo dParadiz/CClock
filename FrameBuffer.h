@@ -8,6 +8,9 @@
 #include <sys/ioctl.h>
 #include <string.h>
 #include <SDL2/SDL_pixels.h>
+#include <SDL2/SDL_surface.h>
+#include <stdexcept>
+
 
 class FrameBuffer {
 protected:
@@ -30,28 +33,35 @@ public:
 
     };
 
-    bool init(int frameBufferHandle) {
+    bool init(const char *frameBufferPath) {
+        int frameBufferHandle = open(frameBufferPath, O_RDWR);
 
-        if (frameBufferHandle >= 0) {
-            if (!ioctl(frameBufferHandle, FBIOGET_VSCREENINFO, &screen_info) &&
-                !ioctl(frameBufferHandle, FBIOGET_FSCREENINFO, &fixed_info)) {
-                width = screen_info.width;
-                height = screen_info.height;
-
-                bufferLength = screen_info.yres_virtual * fixed_info.line_length;
-                buffer = (char *) mmap(NULL,
-                                       bufferLength,
-                                       PROT_READ | PROT_WRITE,
-                                       MAP_SHARED,
-                                       frameBufferHandle,
-                                       0);
-
-                bitsPerPixel = screen_info.bits_per_pixel;
-
-                return buffer != MAP_FAILED;
-            }
+        if (frameBufferHandle == -1) {
+            throw std::runtime_error(strerror(errno));
         }
-        return false;
+
+        if (!ioctl(frameBufferHandle, FBIOGET_VSCREENINFO, &screen_info) &&
+            !ioctl(frameBufferHandle, FBIOGET_FSCREENINFO, &fixed_info)) {
+            width = screen_info.width;
+            height = screen_info.height;
+
+            bufferLength = screen_info.yres_virtual * fixed_info.line_length;
+            buffer = (char *) mmap(NULL,
+                                   bufferLength,
+                                   PROT_READ | PROT_WRITE,
+                                   MAP_SHARED,
+                                   frameBufferHandle,
+                                   0);
+
+            bitsPerPixel = screen_info.bits_per_pixel;
+            close(frameBufferHandle);
+            if (buffer == MAP_FAILED) {
+                throw std::runtime_error("mapping failed");
+            }
+        } else {
+            close(frameBufferHandle);
+            throw std::runtime_error(strerror(errno));
+        }
     }
 
     void updatePixel(int x, int y, SDL_Color color) {

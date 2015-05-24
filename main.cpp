@@ -5,6 +5,7 @@
 #include "FrameBuffer.h"
 #include "SDLManager.h"
 #include <ctime>
+#include <stdexcept>
 
 using namespace std;
 
@@ -20,45 +21,42 @@ struct tm * getCurrentTime() {
 
 int main() {
 
+    FrameBuffer *buffer = new FrameBuffer;
+    SDLManager *sdlManager = new SDLManager();
+    SDL_Color textColor = {46, 199, 110};
 
 
-    int fd = open("/dev/fb1", O_RDWR);
     char textBuffer[80];
+    try {
 
-    if (fd >= 0) {
-        FrameBuffer *buffer = new FrameBuffer;
-        buffer->init(fd);
-        SDLManager *sdlManager = new SDLManager(buffer);
-        sdlManager->init();
-        SDL_Color textColor = {46, 199, 110};
-        while(1) {
-            struct tm * timeInfo = getCurrentTime();
-            strftime(textBuffer, 80, "%I:%M:%S", timeInfo);
-            if (!sdlManager->renderText(textBuffer, textColor, 48, 60, 60)) {
-                break;
-            };
-            strftime(textBuffer, 80, "%d-%m-%Y", timeInfo);
-            if (!sdlManager->renderText(textBuffer, textColor, 24, 95, 120)) {
-                break;
-            };
-            sdlManager->updateFrameBuffer();
-            sleep(1);
-        }
+            buffer->init("/dev/fb1");
+            sdlManager->init(buffer->width, buffer->height, buffer->bitsPerPixel);
 
+            while (1) {
+                struct tm *timeInfo = getCurrentTime();
+                strftime(textBuffer, 80, "%I:%M:%S", timeInfo);
+
+                if (!sdlManager->renderText(textBuffer, textColor, 48, 60, 60)) {
+                    break;
+                };
+                strftime(textBuffer, 80, "%d-%m-%Y", timeInfo);
+                if (!sdlManager->renderText(textBuffer, textColor, 24, 95, 120)) {
+                    break;
+                };
+                sdlManager->updateFrameBuffer(buffer);
+
+                sleep(1);
+            }
+
+            delete buffer;
+            delete sdlManager;
+
+    } catch (exception &e) {
+        fprintf(stderr, "%s\n", e.what());
         delete buffer;
         delete sdlManager;
-    } else {
-        perror("open");
     }
 
-    /*
-    * Clean up
-    */
-
-
-    if (fd >= 0) {
-        close(fd);
-    }
 
     return 0;
 };
